@@ -66,8 +66,17 @@ print(c9)
 outputs = keras.layers.Conv2D(1, (1,1), activation='sigmoid')(c9)
 
 model = keras.Model(inputs=[inputs], outputs = [outputs])
-# model.compile(optimizer='adam', loss = 'binary_crossentropy', metrics=['accuracy'])
-model.compile()
+model.compile(optimizer='adam', loss = 'binary_crossentropy', metrics=['accuracy'])
+# model.compile()
 model_summary = model.summary()
 print(model_summary)
 
+
+##########################################################
+#model Checkpoint
+chackpointer = keras.callbacks.ModelCheckpoint('model_for_abel.h5', verbose=1, save_best_only=True)
+
+callbacks = [
+    keras.callbacks.EarlyStopping(patience=2, monitor='val_loss'),
+]
+result = model.fit(X,Y, validation_split=0.1, epochs=100, batch_size=16, callbacks = callbacks)
