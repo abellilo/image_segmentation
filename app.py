@@ -48,90 +48,134 @@ for n, id_ in tqdm(enumerate(test_ids), total=len(test_ids)):
     img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
     X_test[n] = img
 
-print('Done!!')
+# print('Done!!')
+#
+#
+# image_x = random.randint(0, len(train_ids))
+# imshow(X_train[image_x])
+# plt.show()
+# imshow(np.squeeze(Y_train[image_x]))
+# plt.show()
 
 
-image_x = random.randint(0, len(train_ids))
-imshow(X_train[image_x])
-plt.show()
-imshow(np.squeeze(Y_train[image_x]))
-plt.show()
+
+#Build UNET Model
+inputs = keras.layers.Input((IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS))
+
+#Endoder Path (Contraction Path)
+# s = keras.layers.Lambda(lambda x: x/255)(inputs)
+c1 = keras.layers.Conv2D(16, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(inputs)
+c1 = keras.layers.Dropout(0.1)(c1)
+c1 = keras.layers.Conv2D(16, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c1)
+p1 = keras.layers.MaxPooling2D(2,2,)(c1)
+
+c2 = keras.layers.Conv2D(32, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(p1)
+c2 = keras.layers.Dropout(0.1)(c2)
+c2 = keras.layers.Conv2D(32, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c2)
+p2 = keras.layers.MaxPooling2D(2,2,)(c2)
+
+c3 = keras.layers.Conv2D(64, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(p2)
+c3 = keras.layers.Dropout(0.2)(c3)
+c3 = keras.layers.Conv2D(64, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c3)
+print(c3)
+p3 = keras.layers.MaxPooling2D(2,2,)(c3)
+
+c4 = keras.layers.Conv2D(128, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(p3)
+c4 = keras.layers.Dropout(0.2)(c4)
+c4 = keras.layers.Conv2D(128, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c4)
+p4 = keras.layers.MaxPooling2D(2,2)(c4)
+
+#bottle neck
+c5 = keras.layers.Conv2D(256, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(p4)
+c5 = keras.layers.Dropout(0.3)(c5)
+c5 = keras.layers.Conv2D(256, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c5)
+
+#decoder path (Expansive path)
+u6 = keras.layers.Conv2DTranspose(128, (3,3), strides=(2,2), padding='same')(c5)
+u6 = keras.layers.concatenate([u6, c4])
+c6 = keras.layers.Conv2D(128, (3,3), activation='relu', kernel_initializer='he_normal', padding= 'same')(u6)
+c6 = keras.layers.Dropout(0.2)(c6)
+c6 = keras.layers.Conv2D(128, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c6)
+print(c6)
+
+u7 = keras.layers.Conv2DTranspose(64, (3,3), strides= (2,2), padding='same')(c6)
+u7 = keras.layers.concatenate([u7, c3])
+c7 = keras.layers.Conv2D(64, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(u7)
+c7 = keras.layers.Dropout(0.2)(c7)
+c7 = keras.layers.Conv2D(64, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c7)
+
+u8 = keras.layers.Conv2DTranspose(32, (3,3), strides= (2,2), padding='same')(c7)
+u8 = keras.layers.concatenate([u8, c2])
+c8 = keras.layers.Conv2D(32, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(u8)
+c8 = keras.layers.Dropout(0.1)(c8)
+c8 = keras.layers.Conv2D(32, (3,3), activation='relu', kernel_initializer="he_normal", padding='same')(c8)
+print(c8)
+
+u9 = keras.layers.Conv2DTranspose(16, (3,3), strides=(2,2), padding='same')(c8)
+u9 = keras.layers.concatenate([u9, c1])
+c9 = keras.layers.Conv2D(16, (3,3), activation='relu', kernel_initializer='he_normal', padding="same")(u9)
+c9 = keras.layers.Dropout(0.1)(c9)
+c9 = keras.layers.Conv2D(16, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c9)
+print(c9)
+
+outputs = keras.layers.Conv2D(1, (1,1), activation='sigmoid')(c9)
+
+model = keras.Model(inputs=[inputs], outputs = [outputs])
+model.compile(optimizer='adam', loss = 'binary_crossentropy', metrics=['accuracy'])
+# model.compile()
+model_summary = model.summary()
+print(model_summary)
 
 
-#
-# #Build UNET Model
-# inputs = keras.layers.Input((IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS))
-#
-# #Endoder Path (Contraction Path)
-# # s = keras.layers.Lambda(lambda x: x/255)(inputs)
-# c1 = keras.layers.Conv2D(16, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(inputs)
-# c1 = keras.layers.Dropout(0.1)(c1)
-# c1 = keras.layers.Conv2D(16, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c1)
-# p1 = keras.layers.MaxPooling2D(2,2,)(c1)
-#
-# c2 = keras.layers.Conv2D(32, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(p1)
-# c2 = keras.layers.Dropout(0.1)(c2)
-# c2 = keras.layers.Conv2D(32, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c2)
-# p2 = keras.layers.MaxPooling2D(2,2,)(c2)
-#
-# c3 = keras.layers.Conv2D(64, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(p2)
-# c3 = keras.layers.Dropout(0.2)(c3)
-# c3 = keras.layers.Conv2D(64, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c3)
-# print(c3)
-# p3 = keras.layers.MaxPooling2D(2,2,)(c3)
-#
-# c4 = keras.layers.Conv2D(128, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(p3)
-# c4 = keras.layers.Dropout(0.2)(c4)
-# c4 = keras.layers.Conv2D(128, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c4)
-# p4 = keras.layers.MaxPooling2D(2,2)(c4)
-#
-# #bottle neck
-# c5 = keras.layers.Conv2D(256, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(p4)
-# c5 = keras.layers.Dropout(0.3)(c5)
-# c5 = keras.layers.Conv2D(256, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c5)
-#
-# #decoder path (Expansive path)
-# u6 = keras.layers.Conv2DTranspose(128, (3,3), strides=(2,2), padding='same')(c5)
-# u6 = keras.layers.concatenate([u6, c4])
-# c6 = keras.layers.Conv2D(128, (3,3), activation='relu', kernel_initializer='he_normal', padding= 'same')(u6)
-# c6 = keras.layers.Dropout(0.2)(c6)
-# c6 = keras.layers.Conv2D(128, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c6)
-# print(c6)
-#
-# u7 = keras.layers.Conv2DTranspose(64, (3,3), strides= (2,2), padding='same')(c6)
-# u7 = keras.layers.concatenate([u7, c3])
-# c7 = keras.layers.Conv2D(64, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(u7)
-# c7 = keras.layers.Dropout(0.2)(c7)
-# c7 = keras.layers.Conv2D(64, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c7)
-#
-# u8 = keras.layers.Conv2DTranspose(32, (3,3), strides= (2,2), padding='same')(c7)
-# u8 = keras.layers.concatenate([u8, c2])
-# c8 = keras.layers.Conv2D(32, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(u8)
-# c8 = keras.layers.Dropout(0.1)(c8)
-# c8 = keras.layers.Conv2D(32, (3,3), activation='relu', kernel_initializer="he_normal", padding='same')(c8)
-# print(c8)
-#
-# u9 = keras.layers.Conv2DTranspose(16, (3,3), strides=(2,2), padding='same')(c8)
-# u9 = keras.layers.concatenate([u9, c1])
-# c9 = keras.layers.Conv2D(16, (3,3), activation='relu', kernel_initializer='he_normal', padding="same")(u9)
-# c9 = keras.layers.Dropout(0.1)(c9)
-# c9 = keras.layers.Conv2D(16, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c9)
-# print(c9)
-#
-# outputs = keras.layers.Conv2D(1, (1,1), activation='sigmoid')(c9)
-#
-# model = keras.Model(inputs=[inputs], outputs = [outputs])
-# model.compile(optimizer='adam', loss = 'binary_crossentropy', metrics=['accuracy'])
-# # model.compile()
-# model_summary = model.summary()
-# print(model_summary)
-#
-#
-# ##########################################################
-# #model Checkpoint
+##########################################################
+#model Checkpoint
 # chackpointer = keras.callbacks.ModelCheckpoint('model_for_abel.h5', verbose=1, save_best_only=True)
-#
-# callbacks = [
-#     keras.callbacks.EarlyStopping(patience=2, monitor='val_loss'),
-# ]
-# result = model.fit(X,Y, validation_split=0.1, epochs=100, batch_size=16, callbacks = callbacks)
+
+callbacks = [
+    keras.callbacks.EarlyStopping(patience=2, monitor='val_loss'),
+]
+
+result = model.fit(X_train,Y_train, validation_split=0.1, epochs=100, batch_size=16, callbacks = callbacks)
+
+print(result)
+
+
+print("Printing shape[0]*0.9")
+print(int(X_train.shape[0]*0.9))
+
+preds_train = model.predict(X_train[:int(X_train.shape[0]*0.9)], verbose=1)
+preds_val = model.predict(X_train[int(X_train.shape[0]*0.9):], verbose=1)
+preds_test = model.predict(X_test, verbose=1)
+
+
+preds_train_t = (preds_train > 0.5).astype(np.uint8)
+preds_val_t = (preds_val > 0.5).astype(np.uint8)
+preds_test_t = (preds_test > 0.5).astype(np.uint8)
+
+
+#perfoms a sanity check on some random training samples
+ix = random.randint(0, len(preds_train_t))
+imshow(X_train[ix])
+print(X_train[ix])
+plt.show()
+imshow(np.squeeze(Y_train[ix]))
+plt.show()
+imshow(np.squeeze(preds_train_t[ix]))
+plt.show()
+
+#Perform a sanity  check on some random validation samples
+ix = random.randint(0, len(preds_val_t))
+imshow(X_train[int(X_train.shape[0]*0.9):][ix])
+print(X_train[int(X_train.shape[0]*0.9):][ix])
+plt.show()
+imshow(np.squeeze(Y_train[int(Y_train.shape[0]*0.9):][ix]))
+plt.show()
+imshow(np.squeeze(preds_val_t[ix]))
+plt.show()
+
+#Perform a sanity  check on some random test samples
+ix = random.randint(0, len(preds_test_t))
+imshow(X_test[ix])
+plt.show()
+imshow(np.squeeze(preds_test_t[ix]))
+plt.show()
