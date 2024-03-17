@@ -119,10 +119,39 @@ c9 = keras.layers.Dropout(0.1)(c9)
 c9 = keras.layers.Conv2D(16, (3,3), activation='relu', kernel_initializer='he_normal', padding='same')(c9)
 print(c9)
 
-outputs = keras.layers.Conv2D(1, (1,1), activation='sigmoid')(c9)
+outputs = keras.layers.Conv2D(3, (1,1), activation='sigmoid')(c9)
 
 model = keras.Model(inputs=[inputs], outputs = [outputs])
 model.compile(optimizer='adam', loss = 'binary_crossentropy', metrics=['accuracy'])
 # model.compile()
 model_summary = model.summary()
 print(model_summary)
+
+callbacks = [
+    keras.callbacks.EarlyStopping(patience=2, monitor='val_loss'),
+]
+
+result = model.fit(X_train,Y_train, validation_split=0.1, epochs=100, batch_size=16, callbacks = callbacks)
+
+print(result)
+
+print("Printing shape[0]*0.9")
+print(int(X_train.shape[0]*0.9))
+
+preds_train = model.predict(X_train[:int(X_train.shape[0]*0.9)], verbose=1)
+preds_val = model.predict(X_train[int(X_train.shape[0]*0.9):], verbose=1)
+preds_test = model.predict(X_test, verbose=1)
+
+print(preds_train)
+
+preds_train_t = (preds_train > 0.5).astype(np.uint8)
+preds_val_t = (preds_val > 0.5).astype(np.uint8)
+preds_test_t = (preds_test > 0.5).astype(np.uint8)
+
+print(preds_train_t)
+
+#perfoms a sanity check on some random training samples
+ix = random.randint(0, len(preds_train_t))
+imshow(X_train[ix])
+print(X_train[ix])
+plt.show()
